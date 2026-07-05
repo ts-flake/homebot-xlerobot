@@ -1,26 +1,24 @@
+from pathlib import Path
+
 from setuptools import setup, find_packages
+
+
+def _requirements() -> list[str]:
+    text = Path(__file__).with_name("requirements.txt").read_text(encoding="utf-8")
+    reqs = []
+    for line in text.splitlines():
+        line = line.split("#")[0].strip()
+        if line:
+            reqs.append(line)
+    return reqs
+
 
 setup(
     name="homebot",
     version="0.1.0",
-    description="HomeBot 家用机器人控制软件",
+    description="HomeBot home robot control software",
     packages=find_packages(where="software/src"),
     package_dir={"": "software/src"},
-    install_requires=[
-        "pyzmq>=25.0.0",
-        "opencv-python>=4.8.0",
-        "pyserial>=3.5",
-        "flask>=3.0.0",
-        "flask-socketio>=5.3.0",
-        "ultralytics>=8.3.0",
-        "numpy>=1.24.0",
-        "filterpy>=1.4.5",
-        "sherpa-onnx>=1.9.0",
-        "sounddevice>=0.4.6",
-        "openai>=1.0.0",
-        "fastmcp>=2.14.0",
-        "websockets>=12.0",
-        "volcengine-python-sdk",
-    ],
+    install_requires=_requirements(),
     include_package_data=True,
 )

@@ -1,18 +1,36 @@
+# Core
 pyzmq>=25.0.0
-opencv-python>=4.8.0
+numpy>=1.24.0
 pyserial>=3.5
+feetech-servo-sdk>=1.0.0   # Feetech motor bus (imported as scservo_sdk)
+deepdiff>=6.0.0            # motors_bus calibration diff
+tqdm>=4.65.0               # motors_bus progress bars
+
+# Arm
+scipy>=1.10.0              # EE-delta rotation math
+placo                      # 6D IK (server-side ee_delta)
+
+# Gamepad
+pygame>=2.5.0              # SDL gamepad backend
+
+# Vision
+opencv-python>=4.8.0
+ultralytics>=8.3.0
+filterpy>=1.4.5            # human-follow tracking
+
+# Web control
 flask>=3.0.0
 flask-socketio>=5.3.0
-ultralytics>=8.3.0
-numpy>=1.24.0
-filterpy>=1.4.5
 
-# 语音交互依赖
+# Speech
 sherpa-onnx>=1.9.0
 sounddevice>=0.4.6
 openai>=1.0.0
 fastmcp>=2.14.0
 websockets>=12.0
 
-# 火山引擎LLM依赖
+# Volcano Ark LLM
 volcengine-python-sdk
+
+# Optional: debug plots in hal.arm.kinematics.rr_kinematics
+# matplotlib

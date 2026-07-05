@@ -173,15 +173,21 @@ class ChassisConfig:
         "base_back_wheel":  9,
         "base_right_wheel": 10,
     })
-    wheel_mounting_angles_deg: dict = field(default_factory=lambda: {
-        "base_left_wheel": 240,
-        "base_back_wheel": 0,
-        "base_right_wheel": 120,
-    })
     wheel_motor_model: str = "sts3215"
 
-    # kinematics 拓扑 + 参数; 'type' 为 hal 侧 vocabulary, 其余键转发给具体 kinematics.
-    kinematics: dict = field(default_factory=lambda: {'type': 'omni'})
+    # Kinematics topology + params; 'type' selects the hal kinematics class, the
+    # remaining keys are forwarded to it. Wheel names must match wheel_motors.
+    kinematics: dict = field(default_factory=lambda: {
+        'type': 'omni',
+        'wheel_radius': 0.05,   # m
+        'base_radius': 0.125,   # m, wheel center to base center
+        'wheel_motors': ['base_left_wheel', 'base_back_wheel', 'base_right_wheel'],
+        'wheel_mounting_angles_deg': {
+            'base_left_wheel': 240.0,
+            'base_back_wheel': 0.0,
+            'base_right_wheel': 120.0,
+        },
+    })
 
     # ── 控制约束 (SI, 喂给 HAL driver) ──
     max_linear_speed: float = 0.5      # m/s

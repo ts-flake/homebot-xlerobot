@@ -37,7 +37,9 @@ def _default_arms() -> dict:
 def _default_cameras() -> dict:
     """多相机默认配置 (按名索引, path 区分设备)."""
     return {
-        "head": CameraConfig(path="/dev/video0"),
+        "head": CameraConfig(path="/dev/v4l/by-path/platform-3610000.usb-usbv2-0:2.1:1.0-video-index0"),
+        "left_wrist": CameraConfig(path="/dev/v4l/by-path/platform-3610000.usb-usbv2-0:2.3:1.0-video-index0"),
+        "right_wrist": CameraConfig(path="/dev/v4l/by-path/platform-3610000.usb-usbv2-0:2.4:1.0-video-index0")
     }
 
 
