@@ -52,6 +52,7 @@ class HeadService:
 
         self.head = _build_head_driver(self.config)
         self.arbiter = PriorityArbiter(self.TIMEOUT_MS)
+        self._initial_pos: Optional[Dict[str, float]] = None
 
         self._lock = Lock()
         self._context: Optional[zmq.Context] = None
@@ -133,7 +134,7 @@ class HeadService:
                 f"joints: {list(self.config.joint_motors)}",
                 f"rep: {self.rep_addr}",
             ]),
-            icon="🗣",
+            icon="🤖",
         ))
 
         try:
@@ -141,6 +142,17 @@ class HeadService:
         except Exception as e:
             logger.error("head configure failed: %s", e)
             return
+
+        try:
+            self._initial_pos = self.head.read_joints(normalize=True)
+        except Exception as e:
+            logger.error("read initial pose failed: %s", e)
+            self._initial_pos = None
+        if self.config.home_position:
+            try:
+                self.head.move_to_home(duration=self.config.home_move_duration)
+            except Exception as e:
+                logger.error("move_to_home failed: %s", e)
 
         self._context = zmq.Context()
         self._socket = self._context.socket(zmq.REP)
@@ -175,6 +187,11 @@ class HeadService:
             return
         self._stopped = True
         self._running = False
+        if self._initial_pos:
+            try:
+                self.head.move_to(self._initial_pos, duration=self.config.home_move_duration)
+            except Exception as e:
+                logger.error("return to initial pose failed: %s", e)
         try:
             self.head.close()
         except Exception as e:

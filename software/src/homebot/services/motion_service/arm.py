@@ -100,6 +100,25 @@ class ArmService:
             return None
         return self._ee_processor
 
+    def _warmup_ee_processor(self) -> None:
+        """Eager-build the EE processor and run one zero-delta IK solve at startup.
+
+        Placo import, URDF load and the first solver.solve() are all slow; doing
+        them here (not on the first ee_delta) avoids a latency spike that would
+        queue commands and cause an abrupt catch-up motion.
+        """
+        proc = self._get_ee_processor()
+        if proc is None:
+            return
+        try:
+            from homebot.common.interfaces.msg import EEDelta
+            q = self.arm.read_joints(normalize=True)
+            proc.step(q, EEDelta())  # FK + IK once to build placo internals
+            proc.reset()             # clear warmup state; first real cmd re-inits from FK
+            logger.info("ee processor warmed up")
+        except Exception as e:
+            logger.error("ee processor warmup failed: %s", e)
+
     def _handle(self, req: Request, kind: str) -> Response:
         if req.command is Command.QUERY:
             return self._resp(True, "query ok", JointAngles(joint_angles=self._states()))
@@ -211,6 +230,9 @@ class ArmService:
                 self.arm.move_to_home(duration=self.config.home_move_duration)
             except Exception as e:
                 logger.error("move_to_home failed: %s", e)
+
+        # Eager IK init + warmup so the first ee_delta command isn't slow.
+        self._warmup_ee_processor()
 
         self._context = zmq.Context()
         self._socket = self._context.socket(zmq.REP)

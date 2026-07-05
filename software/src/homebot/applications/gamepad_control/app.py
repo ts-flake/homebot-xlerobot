@@ -203,10 +203,11 @@ class GamepadControlApp:
             self._head["head_pitch"] += dpitch; changed = True
         elif states.get("head.pitch-"):
             self._head["head_pitch"] -= dpitch; changed = True
+        # Head yaw motor installation is reversed (yaw+ = CCW, yaw- = CW), so the signs are flipped.
         if states.get("head.yaw+"):
-            self._head["head_yaw"] += dyaw; changed = True
-        elif states.get("head.yaw-"):
             self._head["head_yaw"] -= dyaw; changed = True
+        elif states.get("head.yaw-"):
+            self._head["head_yaw"] += dyaw; changed = True
         if changed:
             self.head_client.send_joints(dict(self._head), source=SOURCE)
 
@@ -289,6 +290,8 @@ class GamepadControlApp:
         for client in [self.chassis_client, self.head_client, *self.arm_clients.values()]:
             if client is not None:
                 try:
+                    client.home(source=SOURCE)
+                except Exception:
                     client.close()
                 except Exception:
                     pass
