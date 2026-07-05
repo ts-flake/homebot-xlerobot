@@ -1,4 +1,5 @@
 from typing import Optional
+from pathlib import Path
 from dataclasses import dataclass, field, asdict
 
 from .hardware import (
@@ -20,16 +21,17 @@ def _default_arms() -> dict:
     - right 在 ACM1, 与头部共线 (right_arm 1-7 + head 8/9)
     各臂 service_addr / calibration_path 不同.
     """
+    calib_dir = Path(__file__).resolve().parent / "calibration"
     return {
         "left": ArmConfig(
             port="/dev/ttyACM0",
             service_addr="tcp://*:5557",
-            calibration_path="configs/calibration/left_arm.json",
+            calibration_path=str(calib_dir / "left_arm.json"),
         ),
         "right": ArmConfig(
             port="/dev/ttyACM1",
             service_addr="tcp://*:5559",
-            calibration_path="configs/calibration/right_arm.json",
+            calibration_path=str(calib_dir / "right_arm.json"),
         ),
     }
 

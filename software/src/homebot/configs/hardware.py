@@ -32,7 +32,7 @@ class ArmConfig:
     """
 
     # ── 硬件 (默认值; 具体 port 由 Config.arms 里 left/right 覆盖) ──
-    port: str = "/dev/ttyACM0"
+    port: str = "/dev/serial/by-path/platform-3610000.usb-usb-0:2.2.1:1.0"
     baudrate: int = 1_000_000
 
     # ── 电机 ──
@@ -83,7 +83,7 @@ class ArmConfig:
     gripper_overload_torque: int = 25
 
     # ── Calibration ──
-    calibration_path: str = "configs/calibration/arm.json"
+    calibration_path: str = str(Path(__file__).resolve().parent / "calibration/arm.json")
 
     # ── ZMQ ──
     service_addr: str = "tcp://*:5557"
@@ -117,7 +117,7 @@ class HeadConfig:
     """
 
     # ── 硬件 (默认 = left_arm 总线 ACM0) ──
-    port: str = "/dev/ttyACM0"
+    port: str = "/dev/serial/by-path/platform-3610000.usb-usb-0:2.2.1:1.0"
     baudrate: int = 1_000_000
 
     # ── 电机 {joint_name: servo_id}; 参考 xlerobot head_yaw=8, head_pitch=9 ──
@@ -147,7 +147,7 @@ class HeadConfig:
     home_move_duration: float = 3.0
 
     # ── Calibration ──
-    calibration_path: str = "configs/calibration/head.json"
+    calibration_path: str = str(Path(__file__).resolve().parent / "calibration/head.json")
 
     # ── ZMQ ──
     service_addr: str = "tcp://*:5558"
@@ -164,7 +164,7 @@ class ChassisConfig:
     """
 
     # ── 硬件 (默认 = right_arm 总线 ACM1) ──
-    port: str = "/dev/ttyACM1"
+    port: str = "/dev/serial/by-path/platform-3610000.usb-usb-0:2.2.2:1.0"
     baudrate: int = 1_000_000
 
     # Motor name: id (same as those in calibration)
@@ -194,7 +194,7 @@ class ChassisConfig:
     max_angular_speed: float = 3.14159  # rad/s (≈180 deg/s)
 
     # ── Calibration ──
-    calibration_path: str = "configs/calibration/chassis.json"
+    calibration_path: str = str(Path(__file__).resolve().parent / "calibration/chassis.json")
 
     # ── ZeroMQ ──
     service_addr: str = "tcp://*:5556"
@@ -204,7 +204,7 @@ class ChassisConfig:
 class BatteryConfig:
     """电池监测配置"""
     # Serial bus for standalone runs; defaults match the chassis bus (battery rides a shared bus).
-    port: str = "/dev/ttyACM1"
+    port: str = "/dev/serial/by-path/platform-3610000.usb-usb-0:2.2.2:1.0"
     baudrate: int = 1_000_000
     motors: dict = field(default_factory=lambda: {
         "base_left_wheel": 8,
@@ -212,7 +212,7 @@ class BatteryConfig:
         "base_right_wheel": 10,
     })
     motor_model: str = "sts3215"
-    calibration_path: str = "configs/calibration/chassis.json"
+    calibration_path: str = str(Path(__file__).resolve().parent / "calibration/battery.json")
 
     # 用于读取电压的舵机ID列表（按优先级排序）
     motor_ids: list = field(default_factory=lambda: [8])
