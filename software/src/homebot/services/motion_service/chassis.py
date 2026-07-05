@@ -38,6 +38,7 @@ def _build_chassis_driver(config: ChassisConfig) -> ChassisDriver:
         kinematics=make_chassis_kinematics(config.kinematics),
         max_linear_speed=config.max_linear_speed,
         max_angular_speed=config.max_angular_speed,
+        on_comm_error=lambda: manager.reconnect(config.port),
     )
 
 

@@ -12,6 +12,7 @@ from homebot.utils.robot_utils import (
     save_calibration,
 )
 
+from ..bus_recovery import BusIORetryMixin
 from ..motors import Motor, MotorCalibration
 from ..motors._utils import check_if_not_connected
 from ..motors.feetech import FeetechMotorsBus, OperatingMode
@@ -20,7 +21,7 @@ from .kinematics import BaseChassisKinematics
 logger = logging.getLogger(__name__)
 
 
-class ChassisDriver:
+class ChassisDriver(BusIORetryMixin):
     """Chassis driver class, allowing a shared motor bus and various chassis kinematics.
 
     The driver is responsible of wheel motor configure / enable or disable torque / calibrate.
@@ -36,6 +37,7 @@ class ChassisDriver:
         *,
         max_linear_speed: float = 0.2, # m/s
         max_angular_speed: float = math.pi / 2, # rad/s
+        on_comm_error=None,
     ):
         # For a shared bus, only a subset of motors is for chassis motion.
         # Take the motor names from chassis kinematics instance.
@@ -53,6 +55,9 @@ class ChassisDriver:
         self._last_vx = 0.0
         self._last_vy = 0.0
         self._last_vtheta = 0.0
+
+        # Called with no args on a comm failure; returns True if the bus recovered.
+        self.on_comm_error = on_comm_error
 
     @property
     def is_connected(self) -> bool:
@@ -91,7 +96,8 @@ class ChassisDriver:
 
     # ── Control API ───────────────────────────────────────────────────
 
-    @check_if_not_connected
+    # No @check_if_not_connected: _io_retry surfaces the bus-level guard so a
+    # dropped bus can reconnect+retry instead of hard-failing here.
     def set_velocity(self, vx: float, vy: float, vtheta: float) -> None:
         """Set chassis velocity in m/s and rad/s. Velocity clipping applies."""
         vx = clip(vx, self.max_linear_speed)
@@ -108,12 +114,13 @@ class ChassisDriver:
         # rad/s to raw ticks
         raw_by_motor = {m: self._radps_to_raw(m, radps) for m,radps in wheel_radps.items()}
 
-        self.bus.sync_write("Goal_Velocity", raw_by_motor, normalize=False)
+        self._io_retry(lambda: self.bus.sync_write("Goal_Velocity", raw_by_motor, normalize=False))
 
-    @check_if_not_connected
     def get_velocity(self) -> tuple[float]:
         """Read chassis velocity, (vx, vy, vtheta)."""
-        raw = self.bus.sync_read("Present_Velocity", self.wheel_motors, normalize=False)
+        raw = self._io_retry(
+            lambda: self.bus.sync_read("Present_Velocity", self.wheel_motors, normalize=False)
+        )
         wheel_radps = {m: self._raw_to_radps(m, raw[m]) for m in self.wheel_motors}
         base_vel = self.kin.forward(wheel_radps)
         return (base_vel['vx'], base_vel['vy'], base_vel['vtheta'])

@@ -49,6 +49,7 @@ class ArmDriver(JointDriver):
         gripper_max_torque_limit: int = 500,
         gripper_protection_current: int = 250,
         gripper_overload_torque: int = 25,
+        on_comm_error=None,
     ):
         super().__init__(
             bus,
@@ -57,6 +58,7 @@ class ArmDriver(JointDriver):
             max_relative_target=max_relative_target,
             default_pid=default_pid,
             pid_gains=pid_gains,
+            on_comm_error=on_comm_error,
         )
         if gripper_joint is not None and gripper_joint not in joint_motors:
             raise ValueError(f"gripper_joint '{gripper_joint}' not in joint_motors {joint_motors}")

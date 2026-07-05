@@ -37,6 +37,7 @@ def _build_head_driver(config: HeadConfig) -> HeadDriver:
         max_relative_target=config.max_relative_target,
         default_pid=config.default_pid,
         pid_gains=config.pid_gains,
+        on_comm_error=lambda: manager.reconnect(config.port),
     )
 
 

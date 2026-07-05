@@ -13,6 +13,7 @@ from homebot.utils.robot_utils import (
     save_calibration,
 )
 
+from .bus_recovery import BusIORetryMixin
 from .motors import MotorCalibration
 from .motors._utils import check_if_not_connected
 from .motors.feetech import FeetechMotorsBus, OperatingMode
@@ -20,7 +21,7 @@ from .motors.feetech import FeetechMotorsBus, OperatingMode
 logger = logging.getLogger(__name__)
 
 
-class JointDriver:
+class JointDriver(BusIORetryMixin):
     """Shared joint-space driver for multi-joint subsystems (arm / head).
 
     One instance = a set of joints on one FeetechMotorsBus. Joint naming / DOF
@@ -46,6 +47,7 @@ class JointDriver:
         max_relative_target: Optional[float] = 10.0,
         default_pid: Optional[PIDGains] = None,
         pid_gains: Optional[dict[str, PIDGains]] = None,
+        on_comm_error=None,
     ):
         if not joint_motors:
             raise ValueError("joint_motors must contain at least one entry.")
@@ -69,6 +71,9 @@ class JointDriver:
         # default_pid applies to joints not overridden in pid_gains (per-joint).
         self.default_pid = default_pid or PIDGains()
         self.pid_gains = dict(pid_gains)
+
+        # Called with no args on a comm failure; returns True if the bus recovered.
+        self.on_comm_error = on_comm_error
 
     # ── Derived properties ────────────────────────────────────────────
 
@@ -121,12 +126,15 @@ class JointDriver:
 
     # ── Read / write joints ───────────────────────────────────────────
 
-    @check_if_not_connected
+    # No @check_if_not_connected: _io_retry surfaces the bus-level guard so a
+    # dropped bus can reconnect+retry instead of hard-failing here.
     def read_joints(self, normalize: bool = True) -> dict[str, float]:
         """Read current joint positions. normalize=True -> deg / RANGE_0_100; False -> raw ticks."""
-        return self.bus.sync_read("Present_Position", self.joint_motors, normalize=normalize)
+        return self._io_retry(
+            lambda: self.bus.sync_read("Present_Position", self.joint_motors, normalize=normalize)
+        )
 
-    @check_if_not_connected
+    # No @check_if_not_connected: see read_joints; _io_retry handles recovery.
     def write_joints(
         self,
         positions: dict[str, float],
@@ -150,15 +158,16 @@ class JointDriver:
         if unknown:
             raise ValueError(f"Unknown joints in write request: {unknown}")
 
-        targets = dict(positions)
+        def _write():
+            targets = dict(positions)
+            if safe and self.max_relative_target is not None and normalize:
+                present = self.bus.sync_read("Present_Position", list(targets), normalize=True)
+                goal_present = {n: (targets[n], present[n]) for n in targets}
+                targets = ensure_safe_goal_position(goal_present, self.max_relative_target)
+            self.bus.sync_write("Goal_Position", targets, normalize=normalize, num_retry=num_retry)
+            return targets
 
-        if safe and self.max_relative_target is not None and normalize:
-            present = self.bus.sync_read("Present_Position", list(targets), normalize=True)
-            goal_present = {n: (targets[n], present[n]) for n in targets}
-            targets = ensure_safe_goal_position(goal_present, self.max_relative_target)
-
-        self.bus.sync_write("Goal_Position", targets, normalize=normalize, num_retry=num_retry)
-        return targets
+        return self._io_retry(_write)
 
     # ── Smooth trajectory ─────────────────────────────────────────────
 

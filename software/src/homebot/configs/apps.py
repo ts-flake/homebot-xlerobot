@@ -18,7 +18,7 @@ class GamepadConfig:
     # ── 使能开关 ──
     enable_left_arm: bool = True
     enable_right_arm: bool = True
-    enable_head: bool = False
+    enable_head: bool = True
     enable_base: bool = True
 
     # 机械臂控制模式: "cartesian" 走 ee_delta (service 端 placo IK).

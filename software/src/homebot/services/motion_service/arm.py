@@ -42,6 +42,7 @@ def _build_arm_driver(config: ArmConfig) -> ArmDriver:
         gripper_max_torque_limit=config.gripper_max_torque_limit,
         gripper_protection_current=config.gripper_protection_current,
         gripper_overload_torque=config.gripper_overload_torque,
+        on_comm_error=lambda: manager.reconnect(config.port),
     )
 
 

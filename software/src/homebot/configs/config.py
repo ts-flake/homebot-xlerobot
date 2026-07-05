@@ -24,12 +24,12 @@ def _default_arms() -> dict:
     calib_dir = Path(__file__).resolve().parent / "calibration"
     return {
         "left": ArmConfig(
-            port="/dev/ttyACM0",
+            port="/dev/serial/by-path/platform-3610000.usb-usb-0:2.2.1:1.0",
             service_addr="tcp://*:5557",
             calibration_path=str(calib_dir / "left_arm.json"),
         ),
         "right": ArmConfig(
-            port="/dev/ttyACM1",
+            port="/dev/serial/by-path/platform-3610000.usb-usb-0:2.2.2:1.0",
             service_addr="tcp://*:5559",
             calibration_path=str(calib_dir / "right_arm.json"),
         ),
@@ -39,9 +39,9 @@ def _default_arms() -> dict:
 def _default_cameras() -> dict:
     """多相机默认配置 (按名索引, path 区分设备)."""
     return {
-        "head": CameraConfig(path="/dev/v4l/by-path/platform-3610000.usb-usbv2-0:2.1:1.0-video-index0"),
-        "left_wrist": CameraConfig(path="/dev/v4l/by-path/platform-3610000.usb-usbv2-0:2.3:1.0-video-index0"),
-        "right_wrist": CameraConfig(path="/dev/v4l/by-path/platform-3610000.usb-usbv2-0:2.4:1.0-video-index0")
+        # "head": CameraConfig(path="/dev/v4l/by-path/platform-3610000.usb-usb-0:2.1:1.0-video-index0"),
+        "head": CameraConfig(path="/dev/v4l/by-path/platform-3610000.usb-usb-0:2.3:1.0-video-index0"),
+        "right_wrist": CameraConfig(path="/dev/v4l/by-path/platform-3610000.usb-usb-0:2.4:1.0-video-index0")
     }
 
 

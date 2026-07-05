@@ -56,6 +56,24 @@ class MotorBusManager:
         logger.info("bus initialized: %s @ %dbps (%d motors)", port, baudrate, len(motors))
         return True
 
+    def reconnect(self, port: str) -> bool:
+        """Reopen a bus after a USB drop; clears the SDK's stuck ``is_using`` guard."""
+        bus = self._buses.get(port)
+        if bus is None:
+            return False
+        try:
+            bus.port_handler.is_using = False  # reset guard left set by an interrupted txn
+            bus.disconnect(disable_torque=False)
+        except Exception as e:
+            logger.warning("reconnect: disconnect %s failed: %s", port, e)
+        try:
+            bus.connect()
+        except Exception as e:
+            logger.error("reconnect failed on %s: %s", port, e)
+            return False
+        logger.info("bus reconnected: %s", port)
+        return True
+
     def get_bus(self, port: str) -> Optional[FeetechMotorsBus]:
         """Return the bus on a port, or None if not initialized."""
         return self._buses.get(port)

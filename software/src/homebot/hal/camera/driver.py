@@ -34,9 +34,16 @@ class CameraDriver:
 
     def capture_frame(self):
         """Capture a single BGR frame, or None on failure."""
+        import cv2
         if self._cap is None:
             raise RuntimeError("camera not initialized")
-        ret, frame = self._cap.read()
+        try:
+            ret, frame = self._cap.read()
+        except cv2.error as e:
+            # A corrupt/empty MJPG frame makes OpenCV's internal decoder raise
+            # (imdecode_ '!buf.empty()'). Treat it as a failed capture, not fatal.
+            logger.warning("frame decode error: %s", e)
+            return None
         if not ret:
             logger.warning("failed to read frame")
             return None
