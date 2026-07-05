@@ -3,30 +3,19 @@
 实现视觉伺服控制算法，根据目标位置计算底盘速度
 """
 from typing import Tuple, Optional
-from dataclasses import dataclass
 import time
 
+from homebot.common.interfaces.msg import Velocity
 from homebot.utils.pretty_logging import get_logger
 from .tracker import Target
 
 logger = get_logger(__name__)
 
 
-@dataclass
-class VelocityCommand:
-    """速度指令"""
-    vx: float      # 线速度 X (m/s) - 前进/后退
-    vy: float      # 线速度 Y (m/s) - 左右平移（全向底盘）
-    vz: float      # 角速度 Z (rad/s) - 旋转
-    
-    def __post_init__(self):
-        """确保速度值合理"""
-        self.vx = float(self.vx)
-        self.vy = float(self.vy)
-        self.vz = float(self.vz)
-    
-    def __repr__(self):
-        return f"Velocity(vx={self.vx:+.3f}, vy={self.vy:+.3f}, vz={self.vz:+.3f})"
+def _velocity(vx: float = 0.0, vy: float = 0.0, vtheta: float = 0.0) -> Velocity:
+    """Build a chassis Velocity (linear m/s, angular rad/s about z)."""
+    return Velocity(linear={"x": vx, "y": vy, "z": 0.0},
+                    angular={"x": 0.0, "y": 0.0, "z": vtheta})
 
 
 class FollowController:
@@ -191,7 +180,7 @@ class FollowController:
         
         return output, new_integral
     
-    def compute_velocity(self, target: Target, frame_width: int = None, frame_height: int = None) -> Optional[VelocityCommand]:
+    def compute_velocity(self, target: Target, frame_width: int = None, frame_height: int = None) -> Optional[Velocity]:
         """
         根据目标位置计算跟随速度
         
@@ -203,13 +192,13 @@ class FollowController:
             frame_height: 实际图像高度（用于归一化），默认使用self.frame_height
             
         Returns:
-            VelocityCommand: 速度指令，如果目标无效返回None
+            Velocity: 速度指令，如果目标无效返回None
         """
         if target is None:
             self.target_lost_count += 1
             if self.target_lost_count > self.max_lost_count:
                 # 目标长期丢失，停止
-                return VelocityCommand(0.0, 0.0, 0.0)
+                return _velocity()
             # 暂时丢失，保持之前的速度（可由上层处理）
             return None
         
@@ -260,7 +249,7 @@ class FollowController:
         
         # 角速度方向：目标在左(error_x负)→需要右转(vz负)才能对准目标
         # 目标在右(error_x正)→需要左转(vz正)才能对准目标
-        vz = vz
+        vz = -vz
         
         # ========== 距离控制（线速度 vx）==========
         # 使用归一化到320x320参考空间的面积计算误差
@@ -290,20 +279,20 @@ class FollowController:
         
         # vy = 0（不使用左右平移）
         vy = 0.0
-        
-        return VelocityCommand(vx, vy, vz)
-    
-    def compute_search_velocity(self) -> VelocityCommand:
+
+        return _velocity(vx, vy, vz)
+
+    def compute_search_velocity(self) -> Velocity:
         """
         计算搜索速度
         当目标丢失时原地旋转搜索
-        
+
         Returns:
-            VelocityCommand: 旋转速度指令
+            Velocity: 旋转速度指令
         """
         # 原地旋转，速度适中
         search_vz = self.max_angular_speed * 0.5
-        return VelocityCommand(0.0, 0.0, search_vz)
+        return _velocity(0.0, 0.0, search_vz)
     
     def is_target_lost(self) -> bool:
         """判断目标是否丢失"""
@@ -328,24 +317,24 @@ class FollowController:
             "frame_center": (self.frame_center_x, self.frame_center_y)
         }
     
-    def smooth_velocity(self, current: VelocityCommand, 
-                       target: VelocityCommand,
-                       alpha: float = 0.3) -> VelocityCommand:
+    def smooth_velocity(self, current: Velocity,
+                       target: Velocity,
+                       alpha: float = 0.3) -> Velocity:
         """
         速度平滑（低通滤波）
-        
+
         Args:
             current: 当前速度
             target: 目标速度
             alpha: 平滑系数 (0-1)，越小越平滑
-            
+
         Returns:
-            VelocityCommand: 平滑后的速度
+            Velocity: 平滑后的速度
         """
-        vx = alpha * target.vx + (1 - alpha) * current.vx
-        vy = alpha * target.vy + (1 - alpha) * current.vy
-        vz = alpha * target.vz + (1 - alpha) * current.vz
-        return VelocityCommand(vx, vy, vz)
+        vx = alpha * target.linear["x"] + (1 - alpha) * current.linear["x"]
+        vy = alpha * target.linear["y"] + (1 - alpha) * current.linear["y"]
+        vtheta = alpha * target.angular["z"] + (1 - alpha) * current.angular["z"]
+        return _velocity(vx, vy, vtheta)
 
 
 # 测试代码
@@ -375,8 +364,8 @@ if __name__ == "__main__":
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
     
-    current_velocity = VelocityCommand(0.0, 0.0, 0.0)
-    
+    current_velocity = _velocity()
+
     logger.info("按 'q' 退出测试，按 'r' 重置")
     
     while True:
@@ -402,8 +391,8 @@ if __name__ == "__main__":
             else:
                 # 完全丢失，减速停止
                 current_velocity = controller.smooth_velocity(
-                    current_velocity, 
-                    VelocityCommand(0.0, 0.0, 0.0), 
+                    current_velocity,
+                    _velocity(),
                     alpha=0.1
                 )
         
@@ -425,7 +414,7 @@ if __name__ == "__main__":
         # 显示速度信息
         status = controller.get_status()
         info_lines = [
-            f"Velocity: vx={current_velocity.vx:+.2f}, vz={current_velocity.vz:+.2f}",
+            f"Velocity: vx={current_velocity.linear['x']:+.2f}, vtheta={current_velocity.angular['z']:+.2f}",
             f"Status: {'Lost' if status['target_lost'] else 'Searching' if status['searching'] else 'Tracking'}",
             f"Targets: {len(tracker.get_all_targets())}"
         ]
@@ -442,7 +431,7 @@ if __name__ == "__main__":
         elif key == ord('r'):
             tracker.reset()
             controller.reset()
-            current_velocity = VelocityCommand(0.0, 0.0, 0.0)
+            current_velocity = _velocity()
             logger.info("已重置")
     
     cap.release()

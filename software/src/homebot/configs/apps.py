@@ -33,9 +33,9 @@ class GamepadConfig:
 
     # ── 底盘速度档 (back 键循环切换): xy m/s, theta deg/s ──
     base_speed_levels: list = field(default_factory=lambda: [
-        {"xy": 0.1, "theta": 30},   # 慢
-        {"xy": 0.2, "theta": 60},   # 中
-        {"xy": 0.3, "theta": 90},   # 快
+        {"xy": 0.05, "theta": 15},   # 慢
+        {"xy": 0.1, "theta": 30},   # 中
+        {"xy": 0.2, "theta": 60},   # 快
     ])
 
 
@@ -61,8 +61,8 @@ class HumanFollowConfig:
     target_height_ratio: float = 1.0          # 1米处人体占画面高度比例（1.0=100%）
     kp_linear: float = 0.8                    # 线速度P系数（归一化误差后）
     kp_angular: float = 1.5                   # 角速度P系数（归一化误差后）
-    max_linear_speed: float = 0.5             # 最大线速度 (m/s)
-    max_angular_speed: float = 2.0            # 最大角速度 (rad/s)
+    max_linear_speed: float = 0.05             # 最大线速度 (m/s)
+    max_angular_speed: float = 0.5            # 最大角速度 (rad/s)
     dead_zone_x: float = 0.15                 # 水平死区（比例值，0.15=15%画面宽度）
     dead_zone_area: float = 0.1               # 面积死区（相对值）
 

@@ -1,37 +1,30 @@
-"""
-人体跟随应用模块
+"""Human-follow application.
 
-使用YOLO26进行人体检测，实现自动跟随功能
+Detects a person with a YOLO model and drives the chassis to follow them.
 
-使用方法:
-    # 方式一：命令行运行
-    cd software/src
-    python -m applications.human_follow
-    
-    # 方式二：代码调用
-    from applications.human_follow import HumanFollowApp
-    
-    app = HumanFollowApp()
-    app.run(display=True)
+Usage:
+    # CLI
+    python -m homebot.applications.human_follow
+
+    # Code
+    from homebot.applications.human_follow import HumanFollowApp
+    HumanFollowApp().run(display=True)
 """
 
 from .detector import HumanDetector, Detection
 from .tracker import TargetTracker, Target, TargetStatus
-from .controller import FollowController, VelocityCommand
-from .follow import HumanFollowApp, FollowMode, FollowStatus, main
+from .controller import FollowController
+from .app import HumanFollowApp, FollowMode, FollowStatus, main
 
 __all__ = [
-    'HumanDetector',
-    'Detection',
-    'TargetTracker',
-    'Target',
-    'TargetStatus',
-    'FollowController',
-    'VelocityCommand',
-    'HumanFollowApp',
-    'FollowMode',
-    'FollowStatus',
-    'main',
+    "HumanDetector",
+    "Detection",
+    "TargetTracker",
+    "Target",
+    "TargetStatus",
+    "FollowController",
+    "HumanFollowApp",
+    "FollowMode",
+    "FollowStatus",
+    "main",
 ]
-
-__version__ = '1.0.0'
