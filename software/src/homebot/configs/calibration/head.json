@@ -1,0 +1,16 @@
+{
+    "head_yaw": {
+        "id": 8,
+        "drive_mode": 0,
+        "homing_offset": 1980,
+        "range_min": 0,
+        "range_max": 4095
+    },
+    "head_pitch": {
+        "id": 9,
+        "drive_mode": 0,
+        "homing_offset": 525,
+        "range_min": 1412,
+        "range_max": 2640
+    }
+}
