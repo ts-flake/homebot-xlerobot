@@ -34,7 +34,8 @@ class VisionService:
         self.camera_name = camera_name
         self.config = (config or cfg.cameras.get(camera_name)
                        or next(iter(cfg.cameras.values()), None) or CameraConfig())
-        self.pub_addr = pub_addr or cfg.zmq.vision_pub_addr or "tcp://*:5560"
+        self.pub_addr = (pub_addr or self.config.pub_addr
+                         or cfg.zmq.vision_pub_addr or "tcp://*:5560")
 
         self._pub_socket = create_socket(zmq.PUB, bind=True, address=self.pub_addr)
         logger.info("vision PUB bound to %s", self.pub_addr)

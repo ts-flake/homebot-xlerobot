@@ -153,7 +153,7 @@ class HumanDetector:
                 conf=self.conf_threshold,
                 classes=[self.PERSON_CLASS_ID],  # 只检测人体
                 imgsz=self.inference_size,
-                half=self.use_half,
+                quantize=self.use_half, # half is deprecated
                 device=self.device,
                 verbose=False  # 禁用ultralytics的默认输出
             )

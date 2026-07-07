@@ -11,7 +11,7 @@ from .hardware import (
 )
 from .network import ZMQConfig, LoggingConfig
 from .services import SpeechConfig, TTSConfig, LLMConfig, VisionConfig
-from .apps import GamepadConfig, HumanFollowConfig
+from .apps import GamepadConfig, HumanFollowConfig, WebControlConfig
 
 
 def _default_arms() -> dict:
@@ -37,11 +37,13 @@ def _default_arms() -> dict:
 
 
 def _default_cameras() -> dict:
-    """多相机默认配置 (按名索引, path 区分设备)."""
+    """多相机默认配置 (按名索引, path 区分设备). head 不设 pub_addr, 回退 zmq.vision_pub_addr."""
     return {
         "head": CameraConfig(path="/dev/v4l/by-path/platform-3610000.usb-usb-0:2.1:1.0-video-index0"),
-        # "left_wrist": CameraConfig(path="/dev/v4l/by-path/platform-3610000.usb-usb-0:2.3:1.0-video-index0"),
-        "right_wrist": CameraConfig(path="/dev/v4l/by-path/platform-3610000.usb-usb-0:2.4:1.0-video-index0")
+        # "left_wrist": CameraConfig(path="/dev/v4l/by-path/platform-3610000.usb-usb-0:2.3:1.0-video-index0",
+        #                            pub_addr="tcp://*:5562"),
+        "right_wrist": CameraConfig(path="/dev/v4l/by-path/platform-3610000.usb-usb-0:2.4:1.0-video-index0",
+                                    pub_addr="tcp://*:5561")
     }
 
 
@@ -61,6 +63,7 @@ class Config:
     llm: LLMConfig = field(default_factory=LLMConfig)
     vision: VisionConfig = field(default_factory=VisionConfig)
     gamepad: GamepadConfig = field(default_factory=GamepadConfig)
+    web: WebControlConfig = field(default_factory=WebControlConfig)
 
     def to_dict(self) -> dict:
         """转换为字典"""
@@ -88,7 +91,8 @@ class Config:
             tts=TTSConfig(**data.get("tts", {})),
             llm=LLMConfig(**data.get("llm", {})),
             vision=VisionConfig(**data.get("vision", {})),
-            gamepad=GamepadConfig(**data.get("gamepad", {}))
+            gamepad=GamepadConfig(**data.get("gamepad", {})),
+            web=WebControlConfig(**data.get("web", {}))
         )
 
 

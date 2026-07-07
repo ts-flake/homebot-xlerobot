@@ -40,6 +40,26 @@ class GamepadConfig:
 
 
 @dataclass
+class WebControlConfig:
+    """网页遥控配置 (控制策略, 对齐 GamepadConfig 风格).
+
+    与 gamepad 的区别: web 摇杆按事件发送, 步长为 m/每次事件 (满偏),
+    不是 gamepad 的 速度*dt.
+    """
+
+    # 机械臂 EE 步长 (m/每次事件, 满偏时)
+    arm_pos_step: float = 0.005
+
+    # ── 底盘速度档 (web UI 按钮循环切换): xy m/s, theta deg/s ──
+    base_speed_levels: list = field(default_factory=lambda: [
+        {"xy": 0.05, "theta": 15},   # 慢
+        {"xy": 0.1, "theta": 30},   # 中
+        {"xy": 0.2, "theta": 60},   # 快
+    ])
+    base_speed_idx: int = 1          # 默认档 (中)
+
+
+@dataclass
 class HumanFollowConfig:
     """人体跟随配置（YOLO26版）"""
     # 模型配置

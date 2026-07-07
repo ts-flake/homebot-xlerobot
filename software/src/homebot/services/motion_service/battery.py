@@ -73,7 +73,7 @@ class BatteryService:
         self._thread.start()
 
         logger.info("\n" + make_callout_text(
-            f"Arm service [{self.arm_name}]",
+            f"Battery service",
             content="\n".join([
                 f"port: {self.config.port}",
                 f"pub: {self.pub_addr}",

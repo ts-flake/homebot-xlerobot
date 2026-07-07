@@ -21,6 +21,9 @@ class CameraConfig:
     fps: int = 30
     fourcc: str = "MJPG"
 
+    # 本相机 vision service 的 PUB bind 地址; None 回退到 zmq.vision_pub_addr (主相机用).
+    pub_addr: Optional[str] = None
+
 
 @dataclass
 class ArmConfig:

@@ -13,7 +13,7 @@ from .hardware import (
 )
 from .network import ZMQConfig, LoggingConfig
 from .services import SpeechConfig, TTSConfig, LLMConfig, VisionConfig
-from .apps import GamepadConfig, HumanFollowConfig
+from .apps import GamepadConfig, HumanFollowConfig, WebControlConfig
 
 from .secrets import (
     get_secrets,
@@ -44,6 +44,7 @@ __all__ = [
     "VisionConfig",
     "GamepadConfig",
     "HumanFollowConfig",
+    "WebControlConfig",
     "get_secrets",
     "reload_secrets",
     "check_secrets",

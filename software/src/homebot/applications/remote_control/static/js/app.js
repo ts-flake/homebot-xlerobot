@@ -281,15 +281,20 @@ class RobotController {
         
         this.socket.on('server_response', (data) => {
             console.log('[Socket] 服务器响应:', data);
-            
+
             // 更新仲裁器连接状态
             if (data.arbiter_connected !== undefined) {
                 this.isArbiterConnected = data.arbiter_connected;
                 this.updateConnectionStatus('arbiter', this.isArbiterConnected);
-                
+
                 if (!this.isArbiterConnected) {
                     this.showToast('仲裁器未连接，无法控制底盘', 'warning');
                 }
+            }
+
+            // 连接握手带回当前速度档
+            if (data.speed_idx !== undefined) {
+                this.updateSpeedDisplay(data.speed_idx, data.speed_level);
             }
         });
         
@@ -354,6 +359,12 @@ class RobotController {
                 // 夹爪状态反馈
                 if (data.closed !== undefined) {
                     this.updateGripperStatus(data.closed);
+                }
+            } else if (data.status === 'speed') {
+                // 底盘速度档切换反馈
+                this.updateSpeedDisplay(data.speed_idx, data.speed_level);
+                if (data.speed_level) {
+                    this.showToast(`速度: ${data.speed_level.xy} m/s, ${data.speed_level.theta}°/s`, 'success');
                 }
             }
         });
@@ -476,6 +487,15 @@ class RobotController {
         document.getElementById('btnGripper').addEventListener('click', () => {
             this.toggleGripper();
         });
+
+        // 底盘速度档按钮 (循环切换, 类似手柄back键)
+        document.getElementById('btnSpeed').addEventListener('click', () => {
+            if (this.isConnected) {
+                this.socket.emit('cycle_speed');
+            } else {
+                this.showToast('未连接，无法切换速度', 'error');
+            }
+        });
         
         // 机械臂前伸按钮
         const btnArmForward = document.getElementById('btnArmForward');
@@ -550,6 +570,17 @@ class RobotController {
         }
     }
     
+    // ========== 底盘速度档显示 ==========
+    updateSpeedDisplay(idx, level) {
+        if (level) this.speedLevel = level;
+        const btn = document.getElementById('btnSpeed');
+        if (!btn) return;
+        const names = ['慢', '中', '快'];
+        const name = names[idx] !== undefined ? names[idx] : `档${idx + 1}`;
+        btn.textContent = `速度: ${name}`;
+        btn.title = level ? `${level.xy} m/s, ${level.theta}°/s` : '';
+    }
+
     // ========== 夹爪控制 ==========
     toggleGripper() {
         console.log('[Control] 切换夹爪状态');
@@ -675,10 +706,11 @@ class RobotController {
         
         // 发送底盘命令（fire-and-forget）
         this.socket.emit('joystick_data', {left: this.joystickData.left});
-        // 本地更新显示
+        // 本地更新显示 (与服务端符号/速度档一致: 右 = -vtheta)
+        const lvl = this.speedLevel || { xy: 0.1, theta: 30 };
         this.updateDataDisplay({
-            vx: -this.joystickData.left.y * 0.5,
-            vz: this.joystickData.left.x * 1.0
+            vx: -this.joystickData.left.y * lvl.xy,
+            vz: -this.joystickData.left.x * lvl.theta * Math.PI / 180
         });
     }
     

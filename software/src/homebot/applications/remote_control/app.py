@@ -1,5 +1,6 @@
 import os
 import sys
+import math
 import time
 import queue
 import signal
@@ -243,11 +244,12 @@ class ChassisBridge:
 class ArmBridge:
     """Web joystick -> EE deltas for one arm (IK on the service side)."""
 
-    POS_STEP = 0.005   # m per event at full deflection
+    POS_STEP = 0.005   # fallback (m per event at full deflection)
     MIN_INTERVAL = 0.02
 
     def __init__(self, arm_addr: str):
         self.client = ArmClient(arm_addr)
+        self.pos_step = get_config().web.arm_pos_step or self.POS_STEP
         self._lock = Lock()   # REQ socket is used from socketio handler threads
         self._last_sent = 0.0
         self._gripper_closed = False
@@ -261,11 +263,12 @@ class ArmBridge:
             return {"success": True, "throttled": True}
         self._last_sent = now
 
-        # 'base': x -> lateral (y), joystick up (-y) -> raise (z). 'reach': x -> forward (x).
+        # Screen right (+x) -> EE -y (EE frame: +y = left), screen up (-y) -> raise (+z).
+        # 'reach': x -> forward (+x).
         if axis == "reach":
-            ee = {"x": x * self.POS_STEP, "y": 0.0, "z": 0.0}
+            ee = {"x": x * self.pos_step, "y": 0.0, "z": 0.0}
         else:
-            ee = {"x": 0.0, "y": x * self.POS_STEP, "z": -y * self.POS_STEP}
+            ee = {"x": 0.0, "y": -x * self.pos_step, "z": -y * self.pos_step}
 
         with self._lock:
             resp = self.client.send_ee_delta(**ee, source=SOURCE)
@@ -310,6 +313,13 @@ chassis_bridge: Optional[ChassisBridge] = None
 arm_bridge: Optional[ArmBridge] = None
 video_streams: Dict[str, VideoStream] = {}
 
+_speed_idx = 0  # current index into config.web.base_speed_levels
+
+
+def _speed_level() -> Dict[str, float]:
+    levels = get_config().web.base_speed_levels
+    return levels[_speed_idx % len(levels)]
+
 human_follow_process: Optional[subprocess.Popen] = None
 human_follow_lock = Lock()
 
@@ -348,7 +358,21 @@ def handle_connect():
         'status': 'connected',
         'message': 'connected to robot control server',
         'arbiter_connected': status.get('connected', False),
+        'speed_idx': _speed_idx,
+        'speed_level': _speed_level(),
     })
+
+
+@socketio.on('cycle_speed')
+def handle_cycle_speed():
+    """Cycle the chassis speed level (like the gamepad back key)."""
+    global _speed_idx
+    levels = get_config().web.base_speed_levels
+    _speed_idx = (_speed_idx + 1) % len(levels)
+    lvl = levels[_speed_idx]
+    logger.info("base speed level -> %d (xy=%.2f m/s, theta=%.0f deg/s)",
+                _speed_idx, lvl["xy"], lvl["theta"])
+    emit('server_response', {'status': 'speed', 'speed_idx': _speed_idx, 'speed_level': lvl})
 
 
 @socketio.on('disconnect')
@@ -366,9 +390,10 @@ def handle_joystick(data):
         left_x = float(left.get('x', 0.0))
         left_y = float(left.get('y', 0.0))
 
-        cfg = get_config().chassis
-        vx = -left_y * cfg.max_linear_speed
-        vtheta = left_x * cfg.max_angular_speed
+        lvl = _speed_level()
+        # Screen: up = -y, right = +x. Chassis: +vx forward, +vtheta CCW (left).
+        vx = -left_y * lvl["xy"]
+        vtheta = -left_x * math.radians(lvl["theta"])
 
         if chassis_bridge:
             chassis_bridge.update_velocity(vx, 0.0, vtheta)
@@ -515,11 +540,13 @@ def _parse_vision_addrs(spec: Optional[str], cfg) -> Dict[str, str]:
 
     Accepts a bare address ("tcp://host:5560") or comma-separated named
     entries ("head=tcp://host:5560,right_wrist=tcp://host:5561"). Default is
-    the single configured vision PUB address.
+    every camera in config.cameras at its pub_addr (or zmq.vision_pub_addr).
     """
     default_name = next(iter(cfg.cameras), "head")
     if not spec:
-        return {default_name: _connect_addr(cfg.zmq.vision_pub_addr)}
+        return {name: _connect_addr(cam.pub_addr or cfg.zmq.vision_pub_addr)
+                for name, cam in cfg.cameras.items()} or \
+               {default_name: _connect_addr(cfg.zmq.vision_pub_addr)}
     addrs: Dict[str, str] = {}
     for i, part in enumerate(p.strip() for p in spec.split(",")):
         if not part:
@@ -538,9 +565,10 @@ def run_server(host: str = '0.0.0.0', port: int = 5000, *,
                vision_addr: Optional[str] = None,
                arm_name: str = 'left',
                debug: bool = False):
-    global chassis_bridge, arm_bridge
+    global chassis_bridge, arm_bridge, _speed_idx
 
     cfg = get_config()
+    _speed_idx = cfg.web.base_speed_idx % max(1, len(cfg.web.base_speed_levels))
     chassis_addr = chassis_addr or _connect_addr(cfg.chassis.service_addr)
     arm_addr = arm_addr or _connect_addr(cfg.arms[arm_name].service_addr)
     vision_addrs = _parse_vision_addrs(vision_addr, cfg)
