@@ -8,12 +8,12 @@ from homebot.hal.arm import ArmDriver, make_arm_motors_dict, load_arm_calibratio
 from homebot.configs import get_config, ArmConfig
 from homebot.common.interfaces.msg import Command, JointAngles
 from homebot.common.interfaces.srv import Request, Response, JointAnglesSrv, decode_request
-from homebot.utils.pretty_logging import get_logger, make_callout_text
+from homebot.utils.pretty_logging import get_logger, init_logging, make_callout_text
 
 from .motor_bus_manager import MotorBusManager
 from .arbiter import PriorityArbiter
 
-logger = get_logger(__name__)
+console_level, logger = get_logger(__name__)
 
 
 def _build_arm_driver(config: ArmConfig) -> ArmDriver:
@@ -289,6 +289,8 @@ def main():
     parser.add_argument("--arm", default="left", help="arm name (config.arms key)")
     parser.add_argument("--addr", default=None, help="override REP address")
     args = parser.parse_args()
+    
+    init_logging(console_level)
 
     service = ArmService(arm_name=args.arm, rep_addr=args.addr)
     service.start()

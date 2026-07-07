@@ -8,12 +8,12 @@ from homebot.hal.head import HeadDriver, make_head_motors_dict, load_head_calibr
 from homebot.configs import get_config, HeadConfig
 from homebot.common.interfaces.msg import Command, JointAngles
 from homebot.common.interfaces.srv import Request, Response, JointAnglesSrv, decode_request
-from homebot.utils.pretty_logging import get_logger, make_callout_text
+from homebot.utils.pretty_logging import get_logger, init_logging, make_callout_text
 
 from .motor_bus_manager import MotorBusManager
 from .arbiter import PriorityArbiter
 
-logger = get_logger(__name__)
+console_level, logger = get_logger(__name__)
 
 
 def _build_head_driver(config: HeadConfig) -> HeadDriver:
@@ -210,6 +210,8 @@ def main():
     parser = argparse.ArgumentParser(description="HomeBot head service")
     parser.add_argument("--addr", default=None, help="override REP address")
     args = parser.parse_args()
+
+    init_logging(console_level)
 
     service = HeadService(rep_addr=args.addr)
     service.start()

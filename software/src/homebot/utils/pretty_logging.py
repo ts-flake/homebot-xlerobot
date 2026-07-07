@@ -98,18 +98,14 @@ def make_callout_text(title: str, *, content: str = None, icon: str = None) -> s
     )
 
 
-def _init_logging(
-        name: str | None = None,
-        level: str = "INFO"
+def init_logging(
+        console_level: str = "INFO"
 ):
     """
-    Initialize logging configuration with colored output.
+    Initialize root logging configuration with colored output.
 
     Args:
         console_level: Logging level for console output
-
-    Returns:
-        logging.Logger: The logger instance
     """
     def custom_format(record: logging.LogRecord) -> str:
         LEVEL_COLOR_MAP: dict[str, str] = {
@@ -134,8 +130,8 @@ def _init_logging(
         + record.getMessage()
         )
 
-    logger = logging.getLogger(name=name)
-    logger.setLevel(level.upper())
+    logger = logging.getLogger()
+    logger.setLevel(logging.NOTSET)
 
     # Clear any existing handlers
     logger.handlers.clear()
@@ -147,11 +143,11 @@ def _init_logging(
     # Console logging
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
-    console_handler.setLevel(level.upper())
+    console_handler.setLevel(console_level.upper())
     logger.addHandler(console_handler)
 
 
-def get_logger(name: str | None = None, level: str | None = None):
+def get_logger(name: str | None = None, level: str | None = None) -> list[str, logging.Logger]:
     import os
     # determine log level from config if available
     level = level or os.environ.get("HOMEBOT_LOG_LEVEL")
@@ -163,11 +159,11 @@ def get_logger(name: str | None = None, level: str | None = None):
             level = "DEBUG"
     
     logger = logging.getLogger(name=name)
-    _init_logging(name, level)
-    return logger
+    return level, logger
 
 if __name__ == "__main__":
-    logger = get_logger(__name__, level="info")
+    level, logger = get_logger(__name__, level="info")
+    init_logging(level)
 
     print(f"logger name: {logger.name}")
     print(f"logger level: {logger.getEffectiveLevel()}")

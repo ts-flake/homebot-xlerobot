@@ -8,12 +8,12 @@ from homebot.hal.motors.feetech import FeetechMotorsBus
 from homebot.hal.battery.driver import BatteryDriver
 from homebot.common.interfaces.msg import BatteryStatus
 from homebot.configs import get_config, BatteryConfig
-from homebot.utils.pretty_logging import get_logger, make_callout_text
+from homebot.utils.pretty_logging import get_logger, init_logging, make_callout_text
 from homebot.utils.robot_utils import make_motors_dict, load_calibration
 
 from .motor_bus_manager import MotorBusManager
 
-logger = get_logger(__name__)
+console_level, logger = get_logger(__name__)
 
 
 def _build_battery_driver(config: BatteryConfig, bus: Optional[FeetechMotorsBus] = None) -> BatteryDriver:
@@ -129,6 +129,8 @@ def main():
     config = get_config().battery
     if args.port:
         config.port = args.port
+    
+    init_logging(console_level)
 
     service = BatteryService(config=config, pub_addr=args.addr)
     service.start()

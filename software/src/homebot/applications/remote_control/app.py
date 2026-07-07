@@ -15,9 +15,9 @@ from homebot.configs import get_config
 from homebot.common.interfaces.msg import Image, SourcePriority
 from homebot.services.motion_service.clients import ChassisClient, ArmClient
 from homebot.utils.zmq_utils import create_socket
-from homebot.utils.pretty_logging import get_logger
+from homebot.utils.pretty_logging import get_logger, init_logging
 
-logger = get_logger(__name__)
+console_level, logger = get_logger(__name__)
 
 _SRC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 
@@ -556,6 +556,8 @@ def main():
     parser.add_argument('--vision', dest='vision_addr', default=None, help='vision PUB address')
     parser.add_argument('--debug', action='store_true')
     args = parser.parse_args()
+
+    init_logging(console_level)
 
     run_server(args.host, args.port,
                chassis_addr=args.chassis_addr, arm_addr=args.arm_addr,

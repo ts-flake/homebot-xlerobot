@@ -8,9 +8,9 @@ from homebot.services.motion_service.motor_bus_manager import MotorBusManager
 from homebot.hal.chassis import make_wheel_motors_dict, load_chassis_calibration
 from homebot.hal.arm import make_arm_motors_dict, load_arm_calibration
 from homebot.hal.head import make_head_motors_dict, load_head_calibration
-from homebot.utils.pretty_logging import get_logger
+from homebot.utils.pretty_logging import get_logger, init_logging
 
-logger = get_logger(__name__)
+console_level, logger = get_logger(__name__)
 
 # --service value -> subsystems to start. 'arms' = every arm in config.arms.
 _SERVICE_SUBSYSTEMS = {
@@ -78,6 +78,8 @@ def main():
     args = parser.parse_args()
 
     config = get_config()
+    
+    init_logging(console_level)
 
     logger.info("chassis port: %s", config.chassis.port)
     for name, arm in config.arms.items():

@@ -14,13 +14,13 @@ from homebot.hal.chassis import (
 from homebot.configs import get_config, ChassisConfig
 from homebot.common.interfaces.msg import SourcePriority, Command, Velocity, NavigationVelocity
 from homebot.common.interfaces.srv import Request, Response, VelocitySrv, decode_request
-from homebot.utils.pretty_logging import get_logger, make_callout_text
+from homebot.utils.pretty_logging import get_logger, init_logging, make_callout_text
 
 from .motor_bus_manager import MotorBusManager
 from .battery import BatteryService
 from .arbiter import PriorityArbiter
 
-logger = get_logger(__name__)
+console_level, logger = get_logger(__name__)
 
 
 def _build_chassis_driver(config: ChassisConfig) -> ChassisDriver:
@@ -230,6 +230,8 @@ def main():
     parser.add_argument("--addr", default=None, help="override REP address")
     parser.add_argument("--battery-addr", default=None, help="override battery PUB address")
     args = parser.parse_args()
+    
+    init_logging(console_level)
 
     service = ChassisService(rep_addr=args.addr, pub_addr=args.battery_addr)
     service.start()
