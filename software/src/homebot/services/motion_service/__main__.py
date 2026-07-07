@@ -8,7 +8,7 @@ from homebot.services.motion_service.motor_bus_manager import MotorBusManager
 from homebot.hal.chassis import make_wheel_motors_dict, load_chassis_calibration
 from homebot.hal.arm import make_arm_motors_dict, load_arm_calibration
 from homebot.hal.head import make_head_motors_dict, load_head_calibration
-from homebot.utils.pretty_logging import get_logger, init_logging
+from homebot.utils.pretty_logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -77,7 +77,6 @@ def main():
     parser.add_argument('--head-addr', default=None, help='head REP address override')
     args = parser.parse_args()
 
-    init_logging()
     config = get_config()
 
     logger.info("chassis port: %s", config.chassis.port)

@@ -15,7 +15,7 @@ from homebot.configs import get_config
 from homebot.common.interfaces.msg import Image, SourcePriority
 from homebot.services.motion_service.clients import ChassisClient, ArmClient
 from homebot.utils.zmq_utils import create_socket
-from homebot.utils.pretty_logging import get_logger, init_logging
+from homebot.utils.pretty_logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -510,7 +510,6 @@ def run_server(host: str = '0.0.0.0', port: int = 5000, *,
                debug: bool = False):
     global chassis_bridge, arm_bridge, video_stream
 
-    init_logging()
     cfg = get_config()
     chassis_addr = chassis_addr or _connect_addr(cfg.chassis.service_addr)
     arm_addr = arm_addr or _connect_addr(cfg.arms[arm_name].service_addr)

@@ -8,7 +8,7 @@ from homebot.hal.motors.feetech import FeetechMotorsBus
 from homebot.hal.battery.driver import BatteryDriver
 from homebot.common.interfaces.msg import BatteryStatus
 from homebot.configs import get_config, BatteryConfig
-from homebot.utils.pretty_logging import get_logger
+from homebot.utils.pretty_logging import get_logger, make_callout_text
 from homebot.utils.robot_utils import make_motors_dict, load_calibration
 
 from .motor_bus_manager import MotorBusManager
@@ -71,7 +71,15 @@ class BatteryService:
         self._running = True
         self._thread = Thread(target=self._loop, daemon=True)
         self._thread.start()
-        logger.info("battery service publishing at %s", self.pub_addr)
+
+        logger.info("\n" + make_callout_text(
+            f"Arm service [{self.arm_name}]",
+            content="\n".join([
+                f"port: {self.config.port}",
+                f"pub: {self.pub_addr}",
+            ]),
+            icon="🔋",
+        ))
 
     def _loop(self) -> None:
         self._publish(force=True)

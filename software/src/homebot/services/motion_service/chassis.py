@@ -14,7 +14,7 @@ from homebot.hal.chassis import (
 from homebot.configs import get_config, ChassisConfig
 from homebot.common.interfaces.msg import SourcePriority, Command, Velocity, NavigationVelocity
 from homebot.common.interfaces.srv import Request, Response, VelocitySrv, decode_request
-from homebot.utils.pretty_logging import get_logger, init_logging, make_callout_text
+from homebot.utils.pretty_logging import get_logger, make_callout_text
 
 from .motor_bus_manager import MotorBusManager
 from .battery import BatteryService
@@ -160,14 +160,13 @@ class ChassisService:
         )
 
     def start(self) -> None:
-        init_logging()
         logger.info("\n" + make_callout_text(
             "Chassis service",
             content="\n".join([
                 f"port: {self.config.port}",
                 f"rep: {self.rep_addr}",
-                f"battery pub: {self.pub_addr}",
                 f"max linear: {self.config.max_linear_speed} m/s",
+                f"max_angular: {self.config.max_angular_speed} rad/s"
             ]),
             icon="🛞",
         ))

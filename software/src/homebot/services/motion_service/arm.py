@@ -8,7 +8,7 @@ from homebot.hal.arm import ArmDriver, make_arm_motors_dict, load_arm_calibratio
 from homebot.configs import get_config, ArmConfig
 from homebot.common.interfaces.msg import Command, JointAngles
 from homebot.common.interfaces.srv import Request, Response, JointAnglesSrv, decode_request
-from homebot.utils.pretty_logging import get_logger, init_logging, make_callout_text
+from homebot.utils.pretty_logging import get_logger, make_callout_text
 
 from .motor_bus_manager import MotorBusManager
 from .arbiter import PriorityArbiter
@@ -103,9 +103,7 @@ class ArmService:
     def _warmup_ee_processor(self) -> None:
         """Eager-build the EE processor and run one zero-delta IK solve at startup.
 
-        Placo import, URDF load and the first solver.solve() are all slow; doing
-        them here (not on the first ee_delta) avoids a latency spike that would
-        queue commands and cause an abrupt catch-up motion.
+        Placo import, URDF load and the first solver.solve() are all slow.
         """
         proc = self._get_ee_processor()
         if proc is None:
@@ -203,7 +201,6 @@ class ArmService:
         )
 
     def start(self) -> None:
-        init_logging()
         logger.info("\n" + make_callout_text(
             f"Arm service [{self.arm_name}]",
             content="\n".join([

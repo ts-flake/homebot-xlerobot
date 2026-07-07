@@ -8,7 +8,7 @@ from homebot.hal.head import HeadDriver, make_head_motors_dict, load_head_calibr
 from homebot.configs import get_config, HeadConfig
 from homebot.common.interfaces.msg import Command, JointAngles
 from homebot.common.interfaces.srv import Request, Response, JointAnglesSrv, decode_request
-from homebot.utils.pretty_logging import get_logger, init_logging, make_callout_text
+from homebot.utils.pretty_logging import get_logger, make_callout_text
 
 from .motor_bus_manager import MotorBusManager
 from .arbiter import PriorityArbiter
@@ -126,7 +126,6 @@ class HeadService:
         )
 
     def start(self) -> None:
-        init_logging()
         logger.info("\n" + make_callout_text(
             "Head service",
             content="\n".join([

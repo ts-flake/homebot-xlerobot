@@ -98,7 +98,7 @@ def make_callout_text(title: str, *, content: str = None, icon: str = None) -> s
     )
 
 
-def init_logging(
+def _init_logging(
         name: str | None = None,
         level: str = "INFO"
 ):
@@ -135,7 +135,7 @@ def init_logging(
         )
 
     logger = logging.getLogger(name=name)
-    logger.setLevel(logging.NOTSET)
+    logger.setLevel(level.upper())
 
     # Clear any existing handlers
     logger.handlers.clear()
@@ -163,13 +163,11 @@ def get_logger(name: str | None = None, level: str | None = None):
             level = "DEBUG"
     
     logger = logging.getLogger(name=name)
-    init_logging(name, level)
+    _init_logging(name, level)
     return logger
-    
 
 if __name__ == "__main__":
-    logger = logging.getLogger(__name__)
-    init_logging(level='debug')
+    logger = get_logger(__name__, level="info")
 
     print(f"logger name: {logger.name}")
     print(f"logger level: {logger.getEffectiveLevel()}")
