@@ -12,7 +12,7 @@ import argparse
 from homebot.utils.pretty_logging import get_logger
 from services.speech_service.wakeup_asr_service import main as wakeup_main
 
-logger = get_logger(__name__)
+_, logger = get_logger(__name__)
 
 
 def main():

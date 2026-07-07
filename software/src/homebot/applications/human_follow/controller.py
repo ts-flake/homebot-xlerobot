@@ -9,7 +9,7 @@ from homebot.common.interfaces.msg import Velocity
 from homebot.utils.pretty_logging import get_logger
 from .tracker import Target
 
-logger = get_logger(__name__)
+_, logger = get_logger(__name__)
 
 
 def _velocity(vx: float = 0.0, vy: float = 0.0, vtheta: float = 0.0) -> Velocity:

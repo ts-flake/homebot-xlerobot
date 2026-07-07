@@ -19,7 +19,7 @@ from services.speech_service.tts_client import (
     tts_synthesize_stream,
 )
 
-logger = get_logger(__name__)
+_, logger = get_logger(__name__)
 
 
 class VoiceEngine:

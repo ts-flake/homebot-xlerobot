@@ -10,7 +10,7 @@ import numpy as np
 from homebot.utils.pretty_logging import get_logger
 from .detector import Detection
 
-logger = get_logger(__name__)
+_, logger = get_logger(__name__)
 
 
 class TargetStatus(Enum):

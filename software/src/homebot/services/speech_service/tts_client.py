@@ -25,7 +25,7 @@ from services.speech_service.protocols import (
     wait_for_event,
 )
 
-logger = get_logger(__name__)
+_, logger = get_logger(__name__)
 
 
 class VolcanoTTSClient:

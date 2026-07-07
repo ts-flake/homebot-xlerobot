@@ -11,7 +11,7 @@ from configs.config import get_config
 from configs.secrets import require_secrets
 from openai import OpenAI
 
-logger = get_logger(__name__)
+_, logger = get_logger(__name__)
 
 
 class DialogueManager:

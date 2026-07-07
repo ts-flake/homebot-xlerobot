@@ -23,7 +23,7 @@ from .detector import HumanDetector
 from .tracker import TargetTracker
 from .controller import FollowController
 
-logger = get_logger(__name__)
+_, logger = get_logger(__name__)
 
 SOURCE = SourcePriority.AUTO
 

@@ -26,7 +26,7 @@ from services.vision_service.vision import VisionSubscriber
 from homebot.utils.pretty_logging import get_logger
 from configs.secrets import get_secrets, require_secrets
 
-logger = get_logger(__name__)
+_, logger = get_logger(__name__)
 
 # 默认火山引擎配置
 DEFAULT_ARK_MODEL = "doubao-seed-2-0-mini-260215"

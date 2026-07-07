@@ -18,7 +18,7 @@ from homebot.utils.pretty_logging import get_logger
 from software.src.homebot.common.zmq_utils import create_socket
 from configs.config import get_config
 
-logger = get_logger(__name__)
+_, logger = get_logger(__name__)
 
 # 创建全局 FastMCP 服务器实例
 mcp = FastMCP("HomeBot Voice Interaction MCP Server")

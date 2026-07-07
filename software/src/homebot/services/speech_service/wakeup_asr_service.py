@@ -24,7 +24,7 @@ from homebot.utils.pretty_logging import get_logger
 from software.src.homebot.common.zmq_utils import create_socket
 from services.speech_service.voice_engine import VoiceEngine
 
-logger = get_logger(__name__)
+_, logger = get_logger(__name__)
 
 
 class WakeupASRService:

@@ -18,7 +18,7 @@ from configs.config import get_config
 from applications.speech_interaction.dialogue_manager import DialogueManager
 from services.speech_service.voice_engine import VoiceEngine
 
-logger = get_logger(__name__)
+_, logger = get_logger(__name__)
 
 
 class SpeechInteractionApp:

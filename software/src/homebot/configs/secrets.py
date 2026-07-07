@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 
 from homebot.utils.pretty_logging import get_logger
 
-logger = get_logger(__name__)
+_, logger = get_logger(__name__)
 
 
 # 项目根目录（software/）

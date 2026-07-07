@@ -12,7 +12,7 @@ import websockets
 
 from homebot.utils.pretty_logging import get_logger
 
-logger = get_logger(__name__)
+_, logger = get_logger(__name__)
 
 
 class MsgType(IntEnum):
