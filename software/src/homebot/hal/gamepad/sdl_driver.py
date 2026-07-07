@@ -1,14 +1,4 @@
 """SDL / pygame 游戏手柄后端 (Linux / 跨平台).
-
-迁移自 lerobot-xlerobot 的 gamepad_utils.SDLDriver. 实现 base.Gamepad 契约.
-
-存在理由: pygame.joystick 暴露的原始按键/轴索引取决于内核 HID 驱动 —— Ubuntu 22
-(hid-sony) 与 Ubuntu 24 (hid-playstation) 同一手柄索引布局不同. 本类优先用 SDL2
-GameController API (经 SDL_GameControllerDB 给出稳定语义名), 回退到 Joystick API +
-名称匹配的布局表. (Windows 用 XInput 后端则无此问题.)
-
-注: pygame 为可选依赖 (见 setup.py extras "gamepad"); 未安装时本模块仍可 import,
-仅在 connect() 时报错.
 """
 from __future__ import annotations
 

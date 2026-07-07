@@ -1,5 +1,5 @@
 import time
-from typing import Optional
+from typing import Optional, Callable
 
 from homebot.common.interfaces.msg import SourcePriority
 from homebot.common.interfaces.srv import Request
@@ -8,12 +8,13 @@ from homebot.common.interfaces.srv import Request
 class PriorityArbiter:
     """Deadman + priority control ownership shared by the motion services."""
 
-    def __init__(self, timeout_ms: float):
+    def __init__(self, timeout_ms: float, on_release: Optional[Callable[[], None]] = None):
         self.timeout_ms = timeout_ms
         self.owner: SourcePriority = SourcePriority.UNKNOWN
         self.priority: int = 0
         self._last_time: float = 0.0
         self._deadline: Optional[float] = None
+        self._on_release = on_release
 
     @property
     def idle(self) -> bool:
@@ -35,7 +36,7 @@ class PriorityArbiter:
         return False
 
     def can_acquire(self, req: Request) -> bool:
-        return self.idle or req.effective_priority >= self.priority
+        return (self.idle or req.effective_priority >= self.priority) and self._deadline is None
 
     def acquire(self, req: Request, deadline: Optional[float] = None) -> None:
         self.owner = req.source
@@ -48,3 +49,5 @@ class PriorityArbiter:
         self.priority = 0
         self._last_time = 0.0
         self._deadline = None
+        if self._on_release is not None:
+            self._on_release()

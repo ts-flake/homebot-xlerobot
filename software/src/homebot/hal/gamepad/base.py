@@ -1,21 +1,11 @@
 """游戏手柄统一接口 (语义层契约).
-
-不同后端 (SDL / XInput) 都实现这个 ``Gamepad`` 协议, 这样 keymap 引擎与 app
-与具体后端解耦, 按平台选驱动即可.
-
-约定 (沿用 SDL GameController):
-- 语义按键名: a/b/x/y, lb/rb, lt/rt, start/back/logo, ls/rs (摇杆按下).
-- 摇杆 ``get_left_stick()/get_right_stick()`` 返回 ``(x, y)``:
-    x 正 = 右; y 正 = 下 (SDL 轴方向). 故 "上" 判定为 ``y < -0.5``.
-- 方向键 ``get_dpad()`` 返回 ``(x, y)``: x 正 = 右; y 正 = 上. 故 "上" 判定为 ``y == 1``.
-  (注: 摇杆与 dpad 的 y 方向约定不同, 与上游 keymap 解码逻辑保持一致.)
 """
 from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
 
-# keymap 解码会用到的语义按键名 (decode_key 中的合法 condition)
+# keymap 解码会用到的语义按键名
 SEMANTIC_BUTTONS = (
     "a", "b", "x", "y",
     "lb", "rb", "lt", "rt",

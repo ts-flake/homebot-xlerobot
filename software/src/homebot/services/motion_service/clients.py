@@ -32,12 +32,12 @@ class MotionClient:
         sock.connect(self.service_addr)
         return sock
 
-    def _roundtrip(self, wire: dict, *, timeout_ms: Optional[int] = None) -> Optional[dict]:
+    def _send_request(self, payload: dict, *, timeout_ms: Optional[int] = None) -> Optional[dict]:
         sock = self._socket
         try:
             if timeout_ms is not None:
                 sock.setsockopt(zmq.RCVTIMEO, timeout_ms)
-            sock.send_json(wire)
+            sock.send_json(payload)
             return sock.recv_json()
         except Exception:
             try:
@@ -75,7 +75,7 @@ class ChassisClient(MotionClient):
         req.data.linear["x"], req.data.linear["y"] = vx, vy
         req.data.angular["z"] = vtheta
         req.data.duration_s = duration
-        d = self._roundtrip(VelocitySrv.encode_request(req))
+        d = self._send_request(VelocitySrv.encode_request(req))
         return VelocitySrv.decode_response(d) if d else None
 
     def send_navigation(
@@ -88,19 +88,19 @@ class ChassisClient(MotionClient):
         req.source, req.priority, req.timestamp_s = source, priority, time.time()
         req.data.linear["value"], req.data.linear["speed"] = distance, speed
         req.data.angular["value"], req.data.angular["speed"] = angle, angle_speed
-        d = self._roundtrip(NavigationSrv.encode_request(req))
+        d = self._send_request(NavigationSrv.encode_request(req))
         return NavigationSrv.decode_response(d) if d else None
 
     def stop(self, source: SourcePriority = SourcePriority.WEB) -> Optional[Response]:
-        return self._cmd(Command.STOP, source)
+        return self._send_cmd(Command.STOP, source)
 
     def unlock(self, source: SourcePriority = SourcePriority.EMERGENCY) -> Optional[Response]:
-        return self._cmd(Command.UNLOCK, source)
+        return self._send_cmd(Command.UNLOCK, source)
 
-    def _cmd(self, command: Command, source: SourcePriority) -> Optional[Response]:
+    def _send_cmd(self, command: Command, source: SourcePriority) -> Optional[Response]:
         req = VelocitySrv.request()
         req.source, req.command, req.timestamp_s = source, command, time.time()
-        d = self._roundtrip(VelocitySrv.encode_request(req))
+        d = self._send_request(VelocitySrv.encode_request(req))
         return VelocitySrv.decode_response(d) if d else None
 
 
@@ -118,7 +118,7 @@ class ArmClient(MotionClient):
         req = JointAnglesSrv.request()
         req.source, req.priority, req.timestamp_s = source, priority, time.time()
         req.data.joint_angles = dict(joints)
-        d = self._roundtrip(JointAnglesSrv.encode_request(req))
+        d = self._send_request(JointAnglesSrv.encode_request(req))
         return JointAnglesSrv.decode_response(d) if d else None
 
     def send_ee_delta(
@@ -132,19 +132,19 @@ class ArmClient(MotionClient):
         req.data.ee_delta = {"x": x, "y": y, "z": z, "rx": rx, "ry": ry, "rz": rz}
         if gripper is not None:
             req.data.extra = {"gripper": gripper}
-        d = self._roundtrip(EEDeltaSrv.encode_request(req))
+        d = self._send_request(EEDeltaSrv.encode_request(req))
         return EEDeltaSrv.decode_response(d) if d else None
 
     def home(self, *, source: SourcePriority = SourcePriority.WEB, priority: Optional[int] = None) -> Optional[Response]:
         req = JointAnglesSrv.request()
         req.source, req.priority, req.command, req.timestamp_s = source, priority, Command.HOME, time.time()
-        d = self._roundtrip(JointAnglesSrv.encode_request(req), timeout_ms=self.HOME_TIMEOUT_MS)
+        d = self._send_request(JointAnglesSrv.encode_request(req), timeout_ms=self.HOME_TIMEOUT_MS)
         return JointAnglesSrv.decode_response(d) if d else None
 
     def query(self, *, source: SourcePriority = SourcePriority.WEB) -> Optional[Response]:
         req = JointAnglesSrv.request()
         req.source, req.command, req.timestamp_s = source, Command.QUERY, time.time()
-        d = self._roundtrip(JointAnglesSrv.encode_request(req))
+        d = self._send_request(JointAnglesSrv.encode_request(req))
         return JointAnglesSrv.decode_response(d) if d else None
 
 
@@ -162,17 +162,17 @@ class HeadClient(MotionClient):
         req = JointAnglesSrv.request()
         req.source, req.priority, req.timestamp_s = source, priority, time.time()
         req.data.joint_angles = dict(joints)
-        d = self._roundtrip(JointAnglesSrv.encode_request(req))
+        d = self._send_request(JointAnglesSrv.encode_request(req))
         return JointAnglesSrv.decode_response(d) if d else None
 
     def home(self, *, source: SourcePriority = SourcePriority.WEB, priority: Optional[int] = None) -> Optional[Response]:
         req = JointAnglesSrv.request()
         req.source, req.priority, req.command, req.timestamp_s = source, priority, Command.HOME, time.time()
-        d = self._roundtrip(JointAnglesSrv.encode_request(req), timeout_ms=self.HOME_TIMEOUT_MS)
+        d = self._send_request(JointAnglesSrv.encode_request(req), timeout_ms=self.HOME_TIMEOUT_MS)
         return JointAnglesSrv.decode_response(d) if d else None
 
     def query(self, *, source: SourcePriority = SourcePriority.WEB) -> Optional[Response]:
         req = JointAnglesSrv.request()
         req.source, req.command, req.timestamp_s = source, Command.QUERY, time.time()
-        d = self._roundtrip(JointAnglesSrv.encode_request(req))
+        d = self._send_request(JointAnglesSrv.encode_request(req))
         return JointAnglesSrv.decode_response(d) if d else None

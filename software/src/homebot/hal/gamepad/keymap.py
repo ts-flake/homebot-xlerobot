@@ -1,11 +1,7 @@
 """keymap 解码引擎 (与具体后端 / 机器人无关).
 
-迁移自 lerobot-xlerobot 的 gamepad_utils. 只含 "把按键组合表达式 (DSL) 对一个
-base.Gamepad 求布尔值" 的逻辑; 具体的 action→组合 绑定表 (keymap 数据) 属于 app 层
-(见 applications/gamepad_control/keymaps.py).
-
-DSL 约定:
-- 语义键: ls/rs (摇杆按下), lb/rb, lt/rt, start/back/logo, a/b/x/y.
+约定:
+- 按键: ls/rs (摇杆按下), lb/rb, lt/rt, start/back/logo, a/b/x/y.
 - 方向: 在 ls/rs/dpad 后加 _up/_down/_left/_right, 如 'ls_up', 'dpad_right'.
 - '&' 连接多个条件 (与); '!' 前缀取非. 如 'lb&ls_up', '!ls&!rs&dpad_up'.
 """

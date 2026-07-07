@@ -74,7 +74,7 @@ class BatteryDriver:
             return
 
         # All motor share the same battery voltage
-        for servo_id, motor_name in self._candidate_motor_names():
+        for motor_id, motor_name in self._candidate_motor_names():
             try:
                 raw_v = self._bus.read("Present_Voltage", motor_name, normalize=False)
                 voltage = float(raw_v) * self._VOLTAGE_SCALE
@@ -88,7 +88,7 @@ class BatteryDriver:
                     temperature = None
 
                 state = BatteryState(
-                    id=servo_id,
+                    id=motor_id,
                     voltage=voltage,
                     percentage=self._voltage_to_percentage(voltage),
                     status=self._determine_status(voltage),

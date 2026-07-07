@@ -59,7 +59,7 @@ class ChassisService:
         self.pub_addr = pub_addr or get_config().battery.pub_addr
 
         self.chassis = _build_chassis_driver(self.config)
-        self.arbiter = PriorityArbiter(self.TIMEOUT_MS)
+        self.arbiter = PriorityArbiter(self.TIMEOUT_MS, self._stop_hw)
         self._emergency_locked = False
 
         self._lock = Lock()
@@ -77,17 +77,14 @@ class ChassisService:
             if req.command is Command.UNLOCK:
                 self._emergency_locked = False
                 self.arbiter.release()
-                self._stop_hw()
                 return self._resp(True, "emergency released")
 
             if req.source is SourcePriority.EMERGENCY:
-                self._stop_hw()
-                self.arbiter.release()
                 self._emergency_locked = True
+                self.arbiter.release()
                 return self._resp(True, "emergency stop, chassis locked")
 
             if req.command is Command.STOP:
-                self._stop_hw()
                 self.arbiter.release()
                 return self._resp(True, "stopped")
 
@@ -230,7 +227,7 @@ def main():
     parser.add_argument("--addr", default=None, help="override REP address")
     parser.add_argument("--battery-addr", default=None, help="override battery PUB address")
     args = parser.parse_args()
-    
+
     init_logging(console_level)
 
     service = ChassisService(rep_addr=args.addr, pub_addr=args.battery_addr)
