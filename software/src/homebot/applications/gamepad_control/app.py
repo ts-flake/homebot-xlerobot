@@ -9,11 +9,11 @@ from homebot.configs import get_config, GamepadConfig
 from homebot.common.interfaces.msg import SourcePriority
 from homebot.hal.gamepad import get_gamepad_states, print_decode_keymap
 from homebot.services.motion_service.clients import ChassisClient, ArmClient, HeadClient
-from homebot.utils.pretty_logging import get_logger
+from homebot.utils.pretty_logging import get_logger, init_logging
 
 from .keymaps import ALL_KEYMAP
 
-logger = get_logger(__name__)
+console_level, logger = get_logger(__name__)
 
 SOURCE = SourcePriority.GAMEPAD
 
@@ -33,11 +33,6 @@ def _make_gamepad(backend: str, gamepad_id: int):
 
 class GamepadControlApp:
     """One gamepad drives the whole xlerobot (dual arms + head + base).
-
-    Per frame, key states become increments (dt * stepsize * factor) sent via the
-    typed motion clients: arms as Cartesian EE deltas (IK on the service side),
-    head as absolute joint targets, base as velocities. Head and gripper are
-    absolute, so the app keeps local accumulated targets; arm EE is a true delta.
     """
 
     def __init__(self, config: Optional[GamepadConfig] = None):
@@ -64,7 +59,7 @@ class GamepadControlApp:
         )
 
         # Local absolute targets: gripper [0,100], head joint angles (deg).
-        self._gripper = {name: 50.0 for name in self._arm_names}
+        self._gripper = {name: 0.0 for name in self._arm_names}
         self._head = dict(gcfg.head.home_position)
         self._arm_home = {name: dict(gcfg.arms[name].home_position) for name in self._arm_names}
         self._head_home = dict(gcfg.head.home_position)
@@ -314,6 +309,7 @@ def main():
     if args.gamepad_id is not None:
         config.gamepad_id = args.gamepad_id
 
+    init_logging(console_level)
     app = GamepadControlApp(config)
     signal.signal(signal.SIGINT, lambda *_: setattr(app, "_running", False))
 

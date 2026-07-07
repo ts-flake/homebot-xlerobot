@@ -308,7 +308,7 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 chassis_bridge: Optional[ChassisBridge] = None
 arm_bridge: Optional[ArmBridge] = None
-video_stream: Optional[VideoStream] = None
+video_streams: Dict[str, VideoStream] = {}
 
 human_follow_process: Optional[subprocess.Popen] = None
 human_follow_lock = Lock()
@@ -320,16 +320,24 @@ def index():
 
 
 @app.route('/video_feed')
-def video_feed():
-    logger.info("video feed request from %s", request.remote_addr)
-    if video_stream is None:
-        return Response(status=503)
+@app.route('/video_feed/<name>')
+def video_feed(name: Optional[str] = None):
+    logger.info("video feed request (%s) from %s", name or "default", request.remote_addr)
+    # No name -> first (primary) camera, keeps the old single-camera URL working.
+    stream = video_streams.get(name) if name else next(iter(video_streams.values()), None)
+    if stream is None:
+        return Response(status=404 if name else 503)
     return Response(
-        video_stream.generate_mjpeg(),
+        stream.generate_mjpeg(),
         mimetype='multipart/x-mixed-replace; boundary=frame',
         headers={'Cache-Control': 'no-cache, no-store, must-revalidate',
                  'Pragma': 'no-cache', 'Expires': '0'},
     )
+
+
+@app.route('/cameras')
+def cameras():
+    return {'cameras': list(video_streams)}
 
 
 @socketio.on('connect')
@@ -502,28 +510,52 @@ def handle_toggle_human_follow(data):
                                      'active': running, 'message': 'no change'})
 
 
+def _parse_vision_addrs(spec: Optional[str], cfg) -> Dict[str, str]:
+    """--vision spec -> {camera_name: connect_addr}.
+
+    Accepts a bare address ("tcp://host:5560") or comma-separated named
+    entries ("head=tcp://host:5560,right_wrist=tcp://host:5561"). Default is
+    the single configured vision PUB address.
+    """
+    default_name = next(iter(cfg.cameras), "head")
+    if not spec:
+        return {default_name: _connect_addr(cfg.zmq.vision_pub_addr)}
+    addrs: Dict[str, str] = {}
+    for i, part in enumerate(p.strip() for p in spec.split(",")):
+        if not part:
+            continue
+        if "=" in part:
+            name, addr = part.split("=", 1)
+        else:
+            name, addr = (default_name if i == 0 else f"cam{i}"), part
+        addrs[name.strip()] = _connect_addr(addr.strip())
+    return addrs
+
+
 def run_server(host: str = '0.0.0.0', port: int = 5000, *,
                chassis_addr: Optional[str] = None,
                arm_addr: Optional[str] = None,
                vision_addr: Optional[str] = None,
                arm_name: str = 'left',
                debug: bool = False):
-    global chassis_bridge, arm_bridge, video_stream
+    global chassis_bridge, arm_bridge
 
     cfg = get_config()
     chassis_addr = chassis_addr or _connect_addr(cfg.chassis.service_addr)
     arm_addr = arm_addr or _connect_addr(cfg.arms[arm_name].service_addr)
-    vision_addr = vision_addr or _connect_addr(cfg.zmq.vision_pub_addr)
+    vision_addrs = _parse_vision_addrs(vision_addr, cfg)
 
     chassis_bridge = ChassisBridge(chassis_addr)
     chassis_bridge.start()
     arm_bridge = ArmBridge(arm_addr)
-    video_stream = VideoStream(vision_addr)
-    if not video_stream.start():
-        logger.warning("vision unavailable; video feed will show placeholder")
+    for name, addr in vision_addrs.items():
+        stream = VideoStream(addr)
+        video_streams[name] = stream
+        if not stream.start():
+            logger.warning("vision '%s' unavailable; feed will show placeholder", name)
 
     logger.info("web control server: http://%s:%d (chassis=%s arm=%s vision=%s)",
-                host, port, chassis_addr, arm_addr, vision_addr)
+                host, port, chassis_addr, arm_addr, vision_addrs)
     try:
         socketio.run(app, host=host, port=port, debug=debug,
                      use_reloader=False, allow_unsafe_werkzeug=True)
@@ -541,7 +573,8 @@ def run_server(host: str = '0.0.0.0', port: int = 5000, *,
             human_follow_process = None
         chassis_bridge.stop()
         arm_bridge.close()
-        video_stream.stop()
+        for stream in video_streams.values():
+            stream.stop()
 
 
 def main():
@@ -553,7 +586,9 @@ def main():
     parser.add_argument('--chassis', dest='chassis_addr', default=None, help='chassis REP address')
     parser.add_argument('--arm', dest='arm_addr', default=None, help='arm REP address')
     parser.add_argument('--arm-name', default='left', help='which arm (config.arms key)')
-    parser.add_argument('--vision', dest='vision_addr', default=None, help='vision PUB address')
+    parser.add_argument('--vision', dest='vision_addr', default=None,
+                        help="vision PUB address(es): 'tcp://host:5560' or "
+                             "'head=tcp://host:5560,right_wrist=tcp://host:5561'")
     parser.add_argument('--debug', action='store_true')
     args = parser.parse_args()
 

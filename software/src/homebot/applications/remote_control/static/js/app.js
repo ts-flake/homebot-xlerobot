@@ -59,6 +59,8 @@ class RobotController {
         this.videoCheckInterval = null;
         this.lastVideoLoadTime = 0;  // 初始化为0，表示尚未收到数据
         this.isVideoActive = false;
+        this.cameras = [];           // 可用相机列表 (来自 /cameras)
+        this.gridMode = false;       // 多画面网格模式
         
         // 初始化
         this.init();
@@ -113,7 +115,7 @@ class RobotController {
         
         // 设置初始状态为连接中
         this.updateVideoStatus(false);
-        
+
         // 3秒后检查连接状态
         setTimeout(() => {
             if (!this.isVideoActive) {
@@ -121,10 +123,63 @@ class RobotController {
                 this.updateVideoStatus(false);
             }
         }, 3000);
+
+        // 查询可用相机，多于1个时显示多画面切换按钮
+        fetch('/cameras')
+            .then(r => r.json())
+            .then(d => {
+                this.cameras = d.cameras || [];
+                console.log('[Video] Available cameras:', this.cameras);
+                if (this.cameras.length > 1) {
+                    const btn = document.getElementById('btnVideoGrid');
+                    if (btn) {
+                        btn.hidden = false;
+                        btn.addEventListener('click', () => this.toggleVideoGrid());
+                    }
+                }
+            })
+            .catch(e => console.warn('[Video] Camera list unavailable:', e));
+    }
+
+    // ========== 多相机网格切换 ==========
+    toggleVideoGrid() {
+        const single = document.getElementById('videoSingle');
+        const grid = document.getElementById('videoGrid');
+        const btn = document.getElementById('btnVideoGrid');
+        if (!single || !grid) return;
+
+        this.gridMode = !this.gridMode;
+        if (this.gridMode) {
+            // 建立每个相机的MJPEG流
+            grid.innerHTML = '';
+            for (const name of this.cameras) {
+                const cell = document.createElement('div');
+                cell.className = 'video-cell';
+                const img = document.createElement('img');
+                img.src = `/video_feed/${encodeURIComponent(name)}?t=${Date.now()}`;
+                img.alt = name;
+                const label = document.createElement('div');
+                label.className = 'cam-label';
+                label.textContent = name;
+                cell.appendChild(img);
+                cell.appendChild(label);
+                grid.appendChild(cell);
+            }
+            this.videoElement.src = '';  // 断开单画面流，避免双倍带宽
+            single.hidden = true;
+            grid.hidden = false;
+            if (btn) btn.textContent = '▣ 单画面';
+        } else {
+            grid.innerHTML = '';  // 移除img即断开网格流
+            grid.hidden = true;
+            single.hidden = false;
+            this.videoElement.src = `/video_feed?t=${Date.now()}`;
+            if (btn) btn.textContent = '⊞ 多画面';
+        }
     }
     
     checkVideoStatus() {
-        if (!this.videoElement) return;
+        if (!this.videoElement || this.gridMode) return;  // 网格模式下单画面流已断开
         
         const img = this.videoElement;
         const currentTime = Date.now();
@@ -583,11 +638,11 @@ class RobotController {
         if (this.armReachActive && !this.isHumanFollowActive) {
             if (now - this.rightJoystickLastSent > this.rightJoystickInterval) {
                 // axis='reach' 表示控制前后伸缩（r值）
-                // x: -1=前伸, 1=后缩, y: 0
-                this.socket.emit('arm_joystick', { 
-                    x: -this.armReachDirection, 
-                    y: 0, 
-                    axis: 'reach' 
+                // x: 1=前伸(EE +x), -1=后缩
+                this.socket.emit('arm_joystick', {
+                    x: this.armReachDirection,
+                    y: 0,
+                    axis: 'reach'
                 });
                 this.rightJoystickLastSent = now;
             }

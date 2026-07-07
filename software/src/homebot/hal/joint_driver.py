@@ -126,6 +126,12 @@ class JointDriver(BusIORetryMixin):
 
     # ── Read / write joints ───────────────────────────────────────────
 
+    def _relative_caps(self, names: list[str]) -> Optional[dict[str, float]]:
+        """Per-joint |goal - present| caps for safe writes; None disables clamping."""
+        if self.max_relative_target is None:
+            return None
+        return dict.fromkeys(names, float(self.max_relative_target))
+
     # No @check_if_not_connected: _io_retry surfaces the bus-level guard so a
     # dropped bus can reconnect+retry instead of hard-failing here.
     def read_joints(self, normalize: bool = True) -> dict[str, float]:
@@ -160,10 +166,11 @@ class JointDriver(BusIORetryMixin):
 
         def _write():
             targets = dict(positions)
-            if safe and self.max_relative_target is not None and normalize:
+            caps = self._relative_caps(list(targets)) if safe and normalize else None
+            if caps:
                 present = self.bus.sync_read("Present_Position", list(targets), normalize=True)
                 goal_present = {n: (targets[n], present[n]) for n in targets}
-                targets = ensure_safe_goal_position(goal_present, self.max_relative_target)
+                targets = ensure_safe_goal_position(goal_present, caps)
             self.bus.sync_write("Goal_Position", targets, normalize=normalize, num_retry=num_retry)
             return targets
 

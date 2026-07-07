@@ -168,6 +168,65 @@
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.8; transform: scale(1.05); }
         }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        /* 多画面切换按钮 (仅多相机时显示) */
+        .video-grid-btn {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            z-index: 10;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.6);
+            color: #fff;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .video-grid-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 多相机网格 */
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            align-content: center;
+            gap: 10px;
+            width: 100%;
+            height: 100%;
+            padding: 10px;
+            overflow-y: auto;
+        }
+
+        .video-cell {
+            position: relative;
+        }
+
+        .video-cell img {
+            width: 100%;
+            aspect-ratio: 4 / 3;  /* 占位固定, 流接通时不跳动 */
+            object-fit: contain;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .video-cell .cam-label {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            padding: 2px 8px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 4px;
+            font-size: 11px;
+            color: #00ff88;
+        }
         
         /* 控制区域 */
         .control-section {
@@ -176,10 +235,12 @@
             flex-direction: column;
         }
         
-        /* 主控制区域 */
+        /* 主控制区域: [数据栏(整行)] + [摇杆 | 摇杆 | 前伸/后缩] */
         .control-area {
             display: flex;
-            position: relative;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
             padding: 15px 20px;
             gap: 20px;
         }
@@ -211,19 +272,17 @@
             white-space: nowrap;
         }
         
-        /* 数据展示 */
+        /* 数据展示: 占据整行, 排在摇杆上方 */
         .data-display {
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
+            order: -1;
+            flex-basis: 100%;
+            box-sizing: border-box;
             background: rgba(0, 0, 0, 0.5);
-            padding: 8px 16px;
+            padding: 8px 28%;
+            margin-bottom: 15px;  /* 摇杆标签在容器上方25px, 留出空间 */
             border-radius: 8px;
             font-family: 'Courier New', monospace;
             font-size: 11px;
-            text-align: center;
-            min-width: 160px;
         }
         
         .data-row {
@@ -381,30 +440,16 @@
                 font-size: 10px;
             }
             
-            /* 手机竖屏模式下，数据展示放在视频和摇杆之间 */
             .control-area {
-                position: static;  /* 取消相对定位 */
-                display: flex;
-                flex-wrap: wrap;   /* 允许换行 */
                 padding: 10px 10px;
                 gap: 8px;
-                justify-content: center;
-                align-items: center;
             }
-            
+
             .data-display {
-                position: static;  /* 取消绝对定位 */
-                order: -1;         /* 放在最前面 */
-                flex-basis: 100%;  /* 占据整行 */
-                width: 100%;
-                transform: none;   /* 取消 transform 偏移 */
-                left: auto;
-                margin: -5px 0 20px 0;  /* 向上移动，底部留空间 */
                 padding: 6px 30%;
                 font-size: 10px;
-                box-sizing: border-box;
             }
-            
+
             .joystick-zone {
                 min-height: 100px;
                 flex: 1 1 0;       /* 允许伸缩，基础尺寸为0 */
@@ -514,30 +559,29 @@
             .main-content {
                 flex-direction: row;
             }
-            
+
             .video-section {
                 flex: 1;
                 padding: 20px;
             }
-            
+
             .control-section {
-                width: 400px;
+                width: 460px;
                 border-left: 1px solid rgba(255, 255, 255, 0.1);
             }
-            
+
+            /* 保持一行: 摇杆 | 摇杆 | 前伸/后缩 */
             .control-area {
-                flex-direction: column;
                 padding: 20px;
-                gap: 30px;
             }
-            
+
             .joystick-zone {
-                min-height: 180px;
+                min-height: 170px;
             }
-            
+
             .joystick-container {
-                width: 150px;
-                height: 150px;
+                width: 140px;
+                height: 140px;
             }
         }
     </style>
@@ -571,10 +615,12 @@
     <div class="main-content">
         <!-- 视频显示区域 -->
         <div class="video-section">
-            <div class="video-container">
+            <button class="video-grid-btn" id="btnVideoGrid" hidden>⊞ 多画面</button>
+            <div class="video-container" id="videoSingle">
                 <img class="video-feed" id="videoFeed" src="{{ url_for('video_feed') }}" alt="摄像头画面">
                 <div class="video-status" id="videoStatus">● LIVE</div>
             </div>
+            <div class="video-grid" id="videoGrid" hidden></div>
         </div>
         
         <!-- 控制区域 -->

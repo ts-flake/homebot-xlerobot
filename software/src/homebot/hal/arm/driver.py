@@ -83,6 +83,12 @@ class ArmDriver(JointDriver):
             self.bus.write("Protection_Current", g, self.gripper_protection_current)
             self.bus.write("Overload_Torque", g, self.gripper_overload_torque)
 
+    def _relative_caps(self, names: list[str]) -> Optional[dict[str, float]]:
+        caps = super()._relative_caps(names)
+        if caps is not None and self.gripper_joint in caps:
+            caps[self.gripper_joint] = 100.0
+        return caps
+
 
 # ── Helpers (thin wrappers over robot_utils; keep hal.arm import paths stable) ──
 
